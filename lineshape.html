@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>بازی خطوط درهم</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; }
+    canvas { border: 2px solid #555; margin-top: 20px; }
+    #timer, #result, #status { font-size: 20px; margin-top: 10px; }
+    button { margin-top: 15px; padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h2>🎨 طراحی با خطوط درهم</h2>
+  <div id="timer">زمان باقی‌مانده: 10 ثانیه</div>
+  <canvas id="drawCanvas" width="400" height="400"></canvas>
+  <div id="status">🖌️ شروع به طراحی کن!</div>
+  <div id="result"></div>
+  <button onclick="restartGame()">🔄 شروع مجدد</button>
+
+  <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
+  <script>
+    const canvas = document.getElementById("drawCanvas");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let timeLeft = 10;
+    let timer;
+
+    canvas.addEventListener("mousedown", () => {
+      drawing = true;
+      document.getElementById("status").innerText = "✏️ در حال طراحی...";
+    });
+
+    canvas.addEventListener("mouseup", () => {
+      drawing = false;
+      ctx.beginPath();
+      document.getElementById("status").innerText = "⏳ طراحی متوقف شد.";
+    });
+
+    canvas.addEventListener("mousemove", draw);
+
+    function draw(e) {
+      if (!drawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#000";
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function startTimer() {
+      timeLeft = 10;
+      document.getElementById("timer").innerText = `زمان باقی‌مانده: ${timeLeft} ثانیه`;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = `زمان باقی‌مانده: ${timeLeft} ثانیه`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          canvas.removeEventListener("mousedown", () => drawing = true);
+          canvas.removeEventListener("mouseup", () => drawing = false);
+          canvas.removeEventListener("mousemove", draw);
+          document.getElementById("status").innerText = "🔍 در حال تشخیص شکل‌ها...";
+          detectShapes();
+        }
+      }, 1000);
+    }
+
+    function detectShapes() {
+      let src = cv.imread("drawCanvas");
+      let dst = new cv.Mat();
+      let gray = new cv.Mat();
+      let contours = new cv.MatVector();
+      let hierarchy = new cv.Mat();
+
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+      cv.threshold(gray, dst, 127, 255, cv.THRESH_BINARY);
+      cv.findContours(dst, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+
+      let shapeCounts = { circle: 0, triangle: 0, square: 0 };
+
+      for (let i = 0; i < contours.size(); ++i) {
+        let cnt = contours.get(i);
+        let approx = new cv.Mat();
+        cv.approxPolyDP(cnt, approx, 0.04 * cv.arcLength(cnt, true), true);
+
+        if (approx.rows === 3) shapeCounts.triangle++;
+        else if (approx.rows === 4) shapeCounts.square++;
+        else if (approx.rows > 4) shapeCounts.circle++;
+
+        approx.delete(); cnt.delete();
+      }
+
+      src.delete(); dst.delete(); gray.delete(); contours.delete(); hierarchy.delete();
+
+      document.getElementById("result").innerText =
+        `✅ شکل‌های تشخیص داده‌شده:\nدایره: ${shapeCounts.circle}\nمربع: ${shapeCounts.square}\nمثلث: ${shapeCounts.triangle}`;
+      document.getElementById("status").innerText = "🎉 تشخیص کامل شد!";
+    }
+
+    function restartGame() {
+      clearInterval(timer);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      document.getElementById("result").innerText = "";
+      document.getElementById("status").innerText = "🖌️ شروع به طراحی کن!";
+      canvas.addEventListener("mousedown", () => drawing = true);
+      canvas.addEventListener("mouseup", () => drawing = false);
+      canvas.addEventListener("mousemove", draw);
+      startTimer();
+    }
+
+    // شروع اولیه بازی
+    startTimer();
+  </script>
+</body>
+</html>
