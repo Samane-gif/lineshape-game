@@ -2,89 +2,77 @@
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>بازی تشخیص شکل</title>
-  <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
+  <title>نقاشی با انگشت</title>
   <style>
     body {
-      font-family: 'Vazir', sans-serif;
-      direction: rtl;
-      text-align: center;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
       background-color: #f0f0f0;
-    }
-    #canvasContainer {
-      display: none;
-      margin-top: 20px;
     }
     canvas {
       border: 2px solid #333;
       background-color: #fff;
-    }
-    #startBtn {
-      padding: 10px 20px;
-      font-size: 18px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #timer {
-      font-size: 20px;
-      margin-top: 15px;
-      color: #444;
+      touch-action: none;
     }
   </style>
 </head>
 <body>
-  <h2>بازی تشخیص شکل</h2>
-  <button id="startBtn">شروع بازی</button>
-  <div id="timer">زمان: 30 ثانیه</div>
-  <div id="canvasContainer">
-    <canvas id="canvas" width="300" height="300"></canvas>
-  </div>
+  <canvas id="canvas" width="300" height="400"></canvas>
 
   <script>
-    let timerInterval;
-    let timeLeft = 30;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
 
-    function startTimer() {
-      document.getElementById('timer').textContent = `زمان: ${timeLeft} ثانیه`;
-      timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').textContent = `زمان: ${timeLeft} ثانیه`;
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          alert("زمان تمام شد!");
-        }
-      }, 1000);
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+
+    function getPos(e) {
+      if (e.touches) {
+        return {
+          x: e.touches[0].clientX - canvas.getBoundingClientRect().left,
+          y: e.touches[0].clientY - canvas.getBoundingClientRect().top
+        };
+      } else {
+        return {
+          x: e.clientX - canvas.getBoundingClientRect().left,
+          y: e.clientY - canvas.getBoundingClientRect().top
+        };
+      }
     }
 
-    function enableDrawing() {
-      const canvas = document.getElementById('canvas');
-      const ctx = canvas.getContext('2d');
-      let drawing = false;
-
-      canvas.addEventListener('mousedown', () => drawing = true);
-      canvas.addEventListener('mouseup', () => drawing = false);
-      canvas.addEventListener('mousemove', (e) => {
-        if (!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(e.clientX - rect.left, e.clientY - rect.top, 3, 0, 2 * Math.PI);
-        ctx.fill();
-      });
+    function startDraw(e) {
+      drawing = true;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
     }
 
-    document.getElementById('startBtn').addEventListener('click', () => {
-      document.getElementById('canvasContainer').style.display = 'block';
-      startTimer();
-      enableDrawing();
-    });
+    function draw(e) {
+      if (!drawing) return;
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
 
-    cv['onRuntimeInitialized'] = () => {
-      document.getElementById('startBtn').disabled = false;
-    };
+    function stopDraw() {
+      drawing = false;
+      ctx.closePath();
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDraw);
+    canvas.addEventListener('mouseout', stopDraw);
+
+    canvas.addEventListener('touchstart', startDraw);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDraw);
+    canvas.addEventListener('touchcancel', stopDraw);
   </script>
 </body>
 </html>
