@@ -3,67 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <title>بازی تشخیص شکل</title>
+  <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
   <style>
     body {
       font-family: 'Vazir', sans-serif;
       direction: rtl;
       text-align: center;
-      background-color: #f0f8ff;
+      background-color: #f0f0f0;
+    }
+    #canvasContainer {
+      display: none;
+      margin-top: 20px;
     }
     canvas {
       border: 2px solid #333;
-      margin-top: 20px;
+      background-color: #fff;
+    }
+    #startBtn {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
     #timer {
-      font-size: 24px;
-      margin-top: 10px;
-      color: #d6336c;
+      font-size: 20px;
+      margin-top: 15px;
+      color: #444;
     }
   </style>
 </head>
 <body>
-  <h1>🎮 بازی تشخیص شکل</h1>
-  <p>شکل خواسته‌شده را بکش!</p>
-  <div id="timer">⏱ زمان: 10</div>
-  <canvas id="canvas" width="300" height="300"></canvas>
+  <h2>بازی تشخیص شکل</h2>
+  <button id="startBtn">شروع بازی</button>
+  <div id="timer">زمان: 30 ثانیه</div>
+  <div id="canvasContainer">
+    <canvas id="canvas" width="300" height="300"></canvas>
+  </div>
 
-  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
   <script>
-    let canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext('2d');
-    let drawing = false;
-
-    canvas.addEventListener('mousedown', () => drawing = true);
-    canvas.addEventListener('mouseup', () => drawing = false);
-    canvas.addEventListener('mousemove', draw);
-
-    function draw(e) {
-      if (!drawing) return;
-      ctx.lineWidth = 3;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#0077b6';
-      ctx.lineTo(e.offsetX, e.offsetY);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(e.offsetX, e.offsetY);
-    }
+    let timerInterval;
+    let timeLeft = 30;
 
     function startTimer() {
-      let timeLeft = 10;
-      let timerElement = document.getElementById('timer');
-      let timer = setInterval(() => {
+      document.getElementById('timer').textContent = `زمان: ${timeLeft} ثانیه`;
+      timerInterval = setInterval(() => {
         timeLeft--;
-        timerElement.textContent = `⏱ زمان: ${timeLeft}`;
+        document.getElementById('timer').textContent = `زمان: ${timeLeft} ثانیه`;
         if (timeLeft <= 0) {
-          clearInterval(timer);
-          alert('⏳ وقت تموم شد!');
+          clearInterval(timerInterval);
+          alert("زمان تمام شد!");
         }
       }, 1000);
     }
 
-    // فقط وقتی OpenCV آماده شد، بازی شروع می‌شه
-    cv['onRuntimeInitialized'] = () => {
+    function enableDrawing() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+
+      canvas.addEventListener('mousedown', () => drawing = true);
+      canvas.addEventListener('mouseup', () => drawing = false);
+      canvas.addEventListener('mousemove', (e) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(e.clientX - rect.left, e.clientY - rect.top, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('canvasContainer').style.display = 'block';
       startTimer();
+      enableDrawing();
+    });
+
+    cv['onRuntimeInitialized'] = () => {
+      document.getElementById('startBtn').disabled = false;
     };
   </script>
 </body>
