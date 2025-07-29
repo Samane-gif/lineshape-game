@@ -2,15 +2,32 @@
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>نقاشی با انگشت</title>
+  <title>بازی نقاشی با انگشت</title>
   <style>
     body {
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+      font-family: 'Shabnam', sans-serif;
+      direction: rtl;
+      text-align: center;
       background-color: #f0f0f0;
+      padding: 20px;
+    }
+    #startBtn {
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #timer {
+      font-size: 20px;
+      margin-top: 15px;
+      color: #444;
+    }
+    #canvasContainer {
+      display: none;
+      margin-top: 20px;
     }
     canvas {
       border: 2px solid #333;
@@ -18,61 +35,90 @@
       touch-action: none;
     }
   </style>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/shabnam-font@v1.0.0/dist/font-face.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-  <canvas id="canvas" width="300" height="400"></canvas>
+  <h2>🎮 بازی نقاشی با انگشت</h2>
+  <button id="startBtn">شروع بازی</button>
+  <div id="timer">زمان: ۳۰ ثانیه</div>
+  <div id="canvasContainer">
+    <canvas id="canvas" width="300" height="400"></canvas>
+  </div>
 
   <script>
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    let drawing = false;
+    let timerInterval;
+    let timeLeft = 30;
 
-    ctx.strokeStyle = 'black';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('canvasContainer').style.display = 'block';
+      startTimer();
+      enableDrawing();
+    });
 
-    function getPos(e) {
-      if (e.touches) {
-        return {
-          x: e.touches[0].clientX - canvas.getBoundingClientRect().left,
-          y: e.touches[0].clientY - canvas.getBoundingClientRect().top
-        };
-      } else {
-        return {
-          x: e.clientX - canvas.getBoundingClientRect().left,
-          y: e.clientY - canvas.getBoundingClientRect().top
-        };
+    function startTimer() {
+      document.getElementById('timer').textContent = `زمان: ${timeLeft} ثانیه`;
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = `زمان: ${timeLeft} ثانیه`;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          alert("⏳ زمان تمام شد!");
+        }
+      }, 1000);
+    }
+
+    function enableDrawing() {
+      const canvas = document.getElementById('canvas');
+      const ctx = canvas.getContext('2d');
+      let drawing = false;
+
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+
+      function getPos(e) {
+        if (e.touches) {
+          return {
+            x: e.touches[0].clientX - canvas.getBoundingClientRect().left,
+            y: e.touches[0].clientY - canvas.getBoundingClientRect().top
+          };
+        } else {
+          return {
+            x: e.clientX - canvas.getBoundingClientRect().left,
+            y: e.clientY - canvas.getBoundingClientRect().top
+          };
+        }
       }
+
+      function startDraw(e) {
+        drawing = true;
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      }
+
+      function draw(e) {
+        if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+
+      function stopDraw() {
+        drawing = false;
+        ctx.closePath();
+      }
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', draw);
+      canvas.addEventListener('mouseup', stopDraw);
+      canvas.addEventListener('mouseout', stopDraw);
+
+      canvas.addEventListener('touchstart', startDraw);
+      canvas.addEventListener('touchmove', draw);
+      canvas.addEventListener('touchend', stopDraw);
+      canvas.addEventListener('touchcancel', stopDraw);
     }
-
-    function startDraw(e) {
-      drawing = true;
-      const pos = getPos(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
-    }
-
-    function draw(e) {
-      if (!drawing) return;
-      const pos = getPos(e);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
-    }
-
-    function stopDraw() {
-      drawing = false;
-      ctx.closePath();
-    }
-
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDraw);
-    canvas.addEventListener('mouseout', stopDraw);
-
-    canvas.addEventListener('touchstart', startDraw);
-    canvas.addEventListener('touchmove', draw);
-    canvas.addEventListener('touchend', stopDraw);
-    canvas.addEventListener('touchcancel', stopDraw);
   </script>
 </body>
 </html>
